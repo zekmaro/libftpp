@@ -18,7 +18,8 @@ class Pool {
 
     private:
         void destroySlot(std::size_t index) {
-            //
+            reinterpret_cast<T*>(&buffer_[i])->~T();
+            usedSlots_[index] = false;
         }
 
     public:
@@ -27,14 +28,13 @@ class Pool {
                 Pool* pool_;
                 std::size_t index_;
                 T* ptr_;
-            
             public:
                 Object(Pool* pool, std::size_t index, T* ptr)
                     : pool_(pool), index_(index), ptr_(ptr) {}
                 
                 ~Object() {
-                    if (pool_) {
-                        //
+                    if (pool_ && ptr_) {
+                        pool_->destroySlot(index_);
                     }
                 }
 
@@ -101,7 +101,9 @@ class Pool {
                 this->acquire(args...);
             }
             usedSlots_[freeIndex] = true;
-            return Object(args...);
+            new (&buffer_[freeIndex]) T(args...);
+            T* ptr = reinterpret_cast<T*>(&buffer_[freeIndex]);
+            return Object(this, freeIndex, ptr);
         }
 
 };
