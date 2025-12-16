@@ -1,31 +1,32 @@
-NAME    = libftpp.a
-CXX     = c++
-CXXFLAGS= -Wall -Wextra -Werror -Iinclude
-AR      = ar rcs
+CXX      := c++
+CXXFLAGS := -Wall -Wextra -Werror -std=c++17 -g -Iinclude
 
-SRCS    = src/vector.cpp \
-          src/string.cpp \
-          src/algo.cpp
+LIB_NAME := libpool.a
+LIB_DIR  := lib
+BUILD    := build
 
-OBJS    = $(SRCS:.cpp=.o)
+TESTS := test_basic test_move test_edge
 
-# Default target
-all: $(NAME)
+TEST_SRCS := $(addsuffix .cpp,$(addprefix tests/,$(TESTS)))
+TEST_BINS := $(addprefix $(BUILD)/,$(TESTS))
 
-# Create the static library
-$(NAME): $(OBJS)
-	$(AR) $(NAME) $(OBJS)
+all: $(LIB_DIR)/$(LIB_NAME) $(TEST_BINS)
 
-# Compile .cpp -> .o
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+# ---------- Library (header-only for now) ----------
+$(LIB_DIR)/$(LIB_NAME):
+	mkdir -p $(LIB_DIR)
+	ar rcs $@
 
-# Cleanup
+# ---------- Tests ----------
+$(BUILD)/%: tests/%.cpp $(LIB_DIR)/$(LIB_NAME)
+	mkdir -p $(BUILD)
+	$(CXX) $(CXXFLAGS) $< -L$(LIB_DIR) -lpool -o $@
+
 clean:
-	rm -f $(OBJS)
+	rm -rf $(BUILD)
 
 fclean: clean
-	rm -f $(NAME)
+	rm -rf $(LIB_DIR)
 
 re: fclean all
 

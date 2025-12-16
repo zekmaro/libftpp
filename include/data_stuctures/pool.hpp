@@ -34,11 +34,11 @@
 template <typename T>
 class Pool {
     private:
-        using Storage = std::aligned_storage_t<sizeof(T), alignof(T)>;
+        using Slot = std::aligned_storage_t<sizeof(T), alignof(T)>;
 
-        std::vector<Storage>    buffer_;
-        std::vector<uint8_t>       usedSlots_;
-        static constexpr std::size_t default_capacity = 256;
+        static constexpr std::size_t    default_capacity = 256;
+        std::vector<uint8_t>            usedSlots_;
+        std::vector<Slot>            buffer_;
 
     private:
         /**
@@ -143,6 +143,9 @@ class Pool {
         */
         void resize(std::size_t count) {
             assert(buffer_.size() == usedSlots_.size());
+            for (uint8_t used : usedSlots_) {
+                assert(!used && "resize() called while objects are still alive");
+            }
 
             const std::size_t n = usedSlots_.size();
             for (std::size_t i = 0; i < n; i++) {
