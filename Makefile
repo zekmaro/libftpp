@@ -5,16 +5,21 @@ LIB_NAME := libftpp.a
 LIB_DIR  := lib
 BUILD    := build
 
-TESTS := test_basic test_move test_edge
+POOL_TESTS := test_basic test_move test_edge
+POOL_BINS  := $(addprefix $(BUILD)/pool/,$(POOL_TESTS))
 
-TEST_SRCS := $(addsuffix .cpp,$(addprefix tests/pool/,$(TESTS)))
-TEST_BINS := $(addprefix $(BUILD)/pool/,$(TESTS))
+DB_BINS    := $(BUILD)/data_buffer/test_data_buffer
 
-all: $(TEST_BINS)
+all: $(POOL_BINS) $(DB_BINS)
 
-# ---------- Tests ----------
+# ---------- Pool tests ----------
 $(BUILD)/pool/%: tests/pool/%.cpp
 	mkdir -p $(BUILD)/pool
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+# ---------- DataBuffer tests ----------
+$(BUILD)/data_buffer/%: tests/data_buffer/%.cpp
+	mkdir -p $(BUILD)/data_buffer
 	$(CXX) $(CXXFLAGS) $< -o $@
 
 clean:
