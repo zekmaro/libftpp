@@ -6,6 +6,7 @@
 #include <utility> // std::forward c++11
 #include <vector>
 #include <limits>
+#include <stack>
 
 /**
  * @brief Fixed-size object pool with manual lifetime management.
@@ -37,8 +38,10 @@ class Pool {
         using Slot = std::aligned_storage_t<sizeof(T), alignof(T)>;
 
         static constexpr std::size_t    default_capacity = 256;
+        std::size_t                     liveCount_ = 0;
+        std::stack<std::size_t>         freeSlots_;
         std::vector<uint8_t>            usedSlots_;
-        std::vector<Slot>            buffer_;
+        std::vector<Slot>               buffer_;
 
     private:
         /**
@@ -58,6 +61,8 @@ class Pool {
             ptr->~T();
 
             usedSlots_[index] = false;
+            freeSlots_.push(index);
+            --liveCount_;
         }
 
     public:
@@ -127,6 +132,7 @@ class Pool {
             this->resize(default_capacity);
         }
         ~Pool() noexcept {
+            assert(liveCount_ == 0 && "Pool destroyed while objects are still alive");
             resize(0);
         }
 
@@ -142,19 +148,13 @@ class Pool {
         * @param count Number of object slots to allocate.
         */
         void resize(std::size_t count) {
-            assert(buffer_.size() == usedSlots_.size());
-            for (uint8_t used : usedSlots_) {
-                assert(!used && "resize() called while objects are still alive");
-            }
+            assert(liveCount_ == 0 && "resize() called while objects are still alive");
 
-            const std::size_t n = usedSlots_.size();
-            for (std::size_t i = 0; i < n; i++) {
-                if (usedSlots_[i] == true) {
-                    reinterpret_cast<T*>(&buffer_[i])->~T();
-                }
-            }
+            freeSlots_ = std::stack<std::size_t>();
             buffer_.resize(count);
             usedSlots_.assign(count, false);
+            for (std::size_t i = 0; i < count; ++i)
+                freeSlots_.push(i);
         }
 
         /**
@@ -173,24 +173,14 @@ class Pool {
         template<typename ... Args>
         Object acquire(Args&& ... args) {
             assert(buffer_.size() == usedSlots_.size());
+            assert(!freeSlots_.empty() && "Pool is full");
 
-            constexpr std::size_t invalid_index = 
-                std::numeric_limits<std::size_t>::max();
-            std::size_t freeIndex = invalid_index;
+            std::size_t freeIndex = freeSlots_.top();
+            freeSlots_.pop();
 
-            const std::size_t n = usedSlots_.size();
-            for (std::size_t i = 0; i < n; ++i) {
-                if (usedSlots_[i] == false) {
-                    freeIndex = i;
-                    break;
-                }
-            }
-            if (freeIndex == invalid_index) {
-                assert(false && "Pool is full");
-                std::abort();
-            }
             new (&buffer_[freeIndex]) T(std::forward<Args>(args)...);
             usedSlots_[freeIndex] = true;
+            ++liveCount_;
 
             T* ptr = reinterpret_cast<T*>(&buffer_[freeIndex]);
             return Object(this, freeIndex, ptr);
