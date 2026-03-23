@@ -25,6 +25,8 @@ make fclean # remove build artifacts and library
 # Design Patterns
 ./build/memento/test_memento
 ./build/observer/test_observer
+./build/singleton/test_singleton
+./build/state_machine/test_state_machine
 ```
 
 ## Structure
@@ -108,17 +110,43 @@ events.subscribe("player_died", []() { saveScore(); });
 events.notify("player_died"); // both lambdas fire in order
 ```
 
-### Design Patterns — TODO
+### Singleton\<TType\> — `include/design_patterns/singleton.hpp`
 
-| Class | Description |
-|---|---|
-| `Singleton<T>` | Enforce single instance with `instantiate()` / `instance()` |
-| `StateMachine<TState>` | State transitions with registered actions |
+Mixin base class enforcing a single instance. Inherit from it, declare it as `friend`, and keep your constructor private.
+
+```cpp
+class AudioManager : public Singleton<AudioManager> {
+    friend class Singleton<AudioManager>;
+    AudioManager() {}
+};
+
+AudioManager::instantiate();       // create the instance
+AudioManager::instance()->play();  // access it anywhere
+// calling instantiate() twice throws
+// calling instance() before instantiate() throws
+```
+
+**Key design decisions:**
+- Instance stored as `unique_ptr<TType>` — no memory leak, cleaned up at program exit
+- Copy and move deleted — only one instance can exist
+- `instantiate()` uses perfect forwarding to support any constructor arguments
+
+### StateMachine\<TState\> — `include/design_patterns/state_machine.hpp`
+
+Manages states and transitions. Register states, define transition lambdas (run when switching), and action lambdas (run on `update()`). Throws on any missing registration.
+
+```cpp
+StateMachine<State> sm(State::Idle);
+sm.addState(State::Running);
+sm.addTransition(State::Idle, State::Running, []() { std::cout << "starting\n"; });
+sm.addAction(State::Running, []() { std::cout << "running\n"; });
+
+sm.transitionTo(State::Running);  // fires transition lambda
+sm.update();                      // fires action for current state
+```
 
 ## TODO
 
-- [ ] Singleton
-- [ ] StateMachine
 - [ ] IOStream — `ThreadSafeIOStream` with prefix and thread-local support
 - [ ] Thread — `Thread`, `ThreadSafeQueue`, `WorkerPool`, `PersistentWorker`
 - [ ] Network — `Message`, `Client`, `Server`
