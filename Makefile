@@ -8,9 +8,11 @@ BUILD    := build
 POOL_TESTS := test_basic test_move test_edge
 POOL_BINS  := $(addprefix $(BUILD)/pool/,$(POOL_TESTS))
 
-DB_BINS    := $(BUILD)/data_buffer/test_data_buffer
+DB_BINS      := $(BUILD)/data_buffer/test_data_buffer
+MEMENTO_BINS  := $(BUILD)/memento/test_memento
+OBSERVER_BINS := $(BUILD)/observer/test_observer
 
-all: $(POOL_BINS) $(DB_BINS)
+all: $(POOL_BINS) $(DB_BINS) $(MEMENTO_BINS) $(OBSERVER_BINS)
 
 # ---------- Pool tests ----------
 $(BUILD)/pool/%: tests/pool/%.cpp
@@ -20,6 +22,16 @@ $(BUILD)/pool/%: tests/pool/%.cpp
 # ---------- DataBuffer tests ----------
 $(BUILD)/data_buffer/%: tests/data_buffer/%.cpp
 	mkdir -p $(BUILD)/data_buffer
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+# ---------- Memento tests ----------
+$(BUILD)/memento/%: tests/memento/%.cpp
+	mkdir -p $(BUILD)/memento
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+# ---------- Observer tests ----------
+$(BUILD)/observer/%: tests/observer/%.cpp
+	mkdir -p $(BUILD)/observer
 	$(CXX) $(CXXFLAGS) $< -o $@
 
 clean:
