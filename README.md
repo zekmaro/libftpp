@@ -14,9 +14,17 @@ make fclean # remove build artifacts and library
 ## Run tests
 
 ```bash
+# Pool
 ./build/pool/test_basic
 ./build/pool/test_move
 ./build/pool/test_edge
+
+# DataBuffer
+./build/data_buffer/test_data_buffer
+
+# Design Patterns
+./build/memento/test_memento
+./build/observer/test_observer
 ```
 
 ## Structure
@@ -35,9 +43,9 @@ include/                    # all headers
 src/                        # implementation files
 tests/
   pool/                     # Pool tests
-    test_basic.cpp
-    test_move.cpp
-    test_edge.cpp
+  data_buffer/              # DataBuffer tests
+  memento/                  # Memento tests
+  observer/                 # Observer tests
 ```
 
 ## Implemented
@@ -65,19 +73,52 @@ obj->method();               // access via ->
 
 ### DataBuffer — `include/data_stuctures/data_buffer.hpp`
 
-Polymorphic byte container with stream operator overloads (`<<`, `>>`). Used for serialization.
+Polymorphic byte container for serialization. Write any type with `<<`, read back in the same order with `>>`. Used as the snapshot type in `Memento`.
 
-### Design Patterns — `include/design_patterns/`
+```cpp
+DataBuffer buf;
+buf << 42 << 3.14f;   // serialize
+
+int a; float b;
+buf >> a >> b;         // deserialize — must match write order
+```
+
+### Memento — `include/design_patterns/memento.hpp`
+
+Base class mixin for save/restore state. Inherit from it and implement `_saveToSnapshot` and `_loadFromSnapshot` to define what gets saved.
+
+```cpp
+class Player : public Memento {
+    void _saveToSnapshot(Snapshot& s) const override { s << health_ << x_; }
+    void _loadFromSnapshot(Snapshot& s) override     { s >> health_ >> x_; }
+};
+
+auto snap = player.save();   // capture state
+player.load(snap);           // restore state
+```
+
+### Observer\<TEvent\> — `include/design_patterns/observer.hpp`
+
+Event notification system. Subscribe lambdas to events, fire all of them with `notify`.
+
+```cpp
+Observer<std::string> events;
+events.subscribe("player_died", []() { showGameOver(); });
+events.subscribe("player_died", []() { saveScore(); });
+events.notify("player_died"); // both lambdas fire in order
+```
+
+### Design Patterns — TODO
 
 | Class | Description |
 |---|---|
-| `Memento` | Save/restore object state via snapshots |
-| `Observer<TEvent>` | Subscribe lambdas to events, notify on trigger |
 | `Singleton<T>` | Enforce single instance with `instantiate()` / `instance()` |
 | `StateMachine<TState>` | State transitions with registered actions |
 
 ## TODO
 
+- [ ] Singleton
+- [ ] StateMachine
 - [ ] IOStream — `ThreadSafeIOStream` with prefix and thread-local support
 - [ ] Thread — `Thread`, `ThreadSafeQueue`, `WorkerPool`, `PersistentWorker`
 - [ ] Network — `Message`, `Client`, `Server`
