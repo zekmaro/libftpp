@@ -10,9 +10,11 @@ POOL_BINS  := $(addprefix $(BUILD)/pool/,$(POOL_TESTS))
 
 DB_BINS      := $(BUILD)/data_buffer/test_data_buffer
 MEMENTO_BINS  := $(BUILD)/memento/test_memento
-OBSERVER_BINS := $(BUILD)/observer/test_observer
+OBSERVER_BINS   := $(BUILD)/observer/test_observer
+SINGLETON_BINS    := $(BUILD)/singleton/test_singleton
+STATEMACHINE_BINS := $(BUILD)/state_machine/test_state_machine
 
-all: $(POOL_BINS) $(DB_BINS) $(MEMENTO_BINS) $(OBSERVER_BINS)
+all: $(POOL_BINS) $(DB_BINS) $(MEMENTO_BINS) $(OBSERVER_BINS) $(SINGLETON_BINS) $(STATEMACHINE_BINS)
 
 # ---------- Pool tests ----------
 $(BUILD)/pool/%: tests/pool/%.cpp
@@ -32,6 +34,16 @@ $(BUILD)/memento/%: tests/memento/%.cpp
 # ---------- Observer tests ----------
 $(BUILD)/observer/%: tests/observer/%.cpp
 	mkdir -p $(BUILD)/observer
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+# ---------- Singleton tests ----------
+$(BUILD)/singleton/%: tests/singleton/%.cpp
+	mkdir -p $(BUILD)/singleton
+	$(CXX) $(CXXFLAGS) $< -o $@
+
+# ---------- StateMachine tests ----------
+$(BUILD)/state_machine/%: tests/state_machine/%.cpp
+	mkdir -p $(BUILD)/state_machine
 	$(CXX) $(CXXFLAGS) $< -o $@
 
 clean:
