@@ -25,7 +25,7 @@ public:
 	}
 
 	template<typename T>
-    ThreadSafeIOStream& operator<<(const T& value) {
+    ThreadSafeIOStream& operator<<(const T& value) {x
 		std::lock_guard<std::mutex> lock(mutex_);
 		buffer_ << value;
 		size_t new_line_pos_ = buffer_.str().find('\n');
